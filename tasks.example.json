@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Kommode Wohnzimmer",
+    "room": "Wohnzimmer",
+    "category": "Staubwischen",
+    "done": false
+  },
+  {
+    "name": "Flur saugen",
+    "room": "Flur",
+    "category": "Saugen",
+    "done": false
+  }
+]
