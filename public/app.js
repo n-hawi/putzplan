@@ -1,17 +1,43 @@
-// ---------------------------
-// Household Cleaning App
-// ---------------------------
+// Household Cleaning Task Manager
+// Real-time collaborative task management with Socket.IO
 
 // Initialize variables
 let tasks = [];
 let showCompleted = false;
 let lastRoom = '';
 let lastCategory = '';
-let currentSort = { field: 'room', asc: true }; // default sorting
+let currentSort = { field: 'room', asc: true };
+let searchFilter = '';
 
 // Initialize Socket.IO for live updates
 const socket = io();
 let isUpdatingFromSocket = false;
+
+// Update progress bar based on completed tasks
+function updateProgressBar() {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.completed).length;
+    const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressBar && progressText) {
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', percentage);
+        progressText.textContent = `${completedTasks} of ${totalTasks} tasks completed`;
+        
+        // Change color based on progress
+        progressBar.className = 'progress-bar';
+        if (percentage === 100) {
+            progressBar.classList.add('bg-success');
+        } else if (percentage >= 50) {
+            progressBar.classList.add('bg-primary');
+        } else {
+            progressBar.classList.add('bg-warning');
+        }
+    }
+}
 
 // Socket.IO event listeners for live updates
 socket.on('initialTasks', (serverTasks) => {
@@ -34,7 +60,7 @@ socket.on('taskUpdated', (data) => {
         
         tasks[data.index].completed = data.task.done;
         renderTasks();
-        showNotification('Task wurde von anderem Nutzer aktualisiert');
+        showNotification('Task updated by another user');
         
         // Restore scroll position on mobile
         if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -55,7 +81,7 @@ socket.on('taskAdded', (data) => {
         delete newTask.done;
         tasks.push(newTask);
         renderTasks();
-        showNotification('Neue Aufgabe wurde hinzugefügt');
+        showNotification('New task added');
         
         // Restore scroll position on mobile
         if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -73,7 +99,7 @@ socket.on('taskDeleted', (data) => {
         
         tasks.splice(data.index, 1);
         renderTasks();
-        showNotification('Aufgabe wurde gelöscht');
+        showNotification('Task deleted');
         
         // Restore scroll position on mobile
         if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -91,7 +117,7 @@ socket.on('tasksReset', () => {
         
         tasks.forEach(t => t.completed = false);
         renderTasks();
-        showNotification('Alle Aufgaben wurden zurückgesetzt');
+        showNotification('All tasks reset');
         
         // Restore scroll position on mobile
         if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -112,7 +138,7 @@ socket.on('taskEdited', (data) => {
         delete editedTask.done;
         tasks[data.index] = editedTask;
         renderTasks();
-        showNotification('Aufgabe wurde bearbeitet');
+        showNotification('Task edited by another user');
         
         // Restore scroll position on mobile
         if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -192,6 +218,18 @@ function renderTasks() {
 
     let filteredTasks = tasks.filter(t => showCompleted || !t.completed);
 
+    // Apply search filter
+    if (searchFilter) {
+        filteredTasks = filteredTasks.filter(task => {
+            return task.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                   task.room.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                   task.category.toLowerCase().includes(searchFilter.toLowerCase());
+        });
+    }
+
+    // Update progress bar
+    updateProgressBar();
+
     // Sort tasks
     filteredTasks.sort((a, b) => {
         let valA = a[currentSort.field].toLowerCase();
@@ -225,11 +263,11 @@ function renderTasks() {
                     </div>
                     <div class="task-actions">
                         <button class="btn btn-success" onclick="toggleComplete(${tasks.indexOf(task)}, this)">
-                            ${task.completed ? '↩️ Undo' : '✅ Erledigt'}
+                            ${task.completed ? '↩️ Undo' : '✅ Complete'}
                         </button>
                         <div class="btn-group" style="flex: 1;">
                             <button class="btn btn-warning" onclick="editTask(${tasks.indexOf(task)})" style="flex: 1;">
-                                ✏️ Bearbeiten
+                                ✏️ Edit
                             </button>
                             <button class="btn btn-danger" onclick="deleteTask(${tasks.indexOf(task)})" style="flex: 0.5;">
                                 🗑️
@@ -251,13 +289,13 @@ function renderTasks() {
                 <td class="d-none d-lg-table-cell">${task.category}</td>
                 <td>
                     <button class="btn btn-sm btn-success" onclick="toggleComplete(${tasks.indexOf(task)}, this)">
-                        ${task.completed ? 'Undo' : 'Erledigt'}
+                        ${task.completed ? 'Undo' : 'Complete'}
                     </button>
                     <button class="btn btn-sm btn-warning" onclick="editTask(${tasks.indexOf(task)})">
-                        Bearbeiten
+                        Edit
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteTask(${tasks.indexOf(task)})">
-                        Löschen
+                        Delete
                     </button>
                 </td>
             `;
@@ -307,13 +345,13 @@ async function editTask(index) {
     const task = tasks[index];
     
     // Create a simple prompt-based editor
-    const newName = prompt('Aufgabe bearbeiten:', task.name);
+    const newName = prompt('Edit task name:', task.name);
     if (newName === null) return; // User cancelled
-    
-    const newRoom = prompt('Raum bearbeiten:', task.room);
+
+    const newRoom = prompt('Edit room:', task.room);
     if (newRoom === null) return; // User cancelled
-    
-    const newCategory = prompt('Kategorie bearbeiten:', task.category);
+
+    const newCategory = prompt('Edit category:', task.category);
     if (newCategory === null) return; // User cancelled
     
     const updatedTask = {
@@ -324,7 +362,7 @@ async function editTask(index) {
     
     // Validate input
     if (!updatedTask.name || !updatedTask.room || !updatedTask.category) {
-        alert('Bitte alle Felder ausfüllen!');
+        alert('Please fill in all fields!');
         return;
     }
     
@@ -371,7 +409,7 @@ async function editTask(index) {
 
 // Delete task function
 async function deleteTask(index) {
-    if (!confirm('Aufgabe wirklich löschen?')) {
+    if (!confirm('Are you sure you want to delete this task?')) {
         return;
     }
     
@@ -475,9 +513,55 @@ document.getElementById('toggleShowDone').addEventListener('click', function () 
     renderTasks();
 });
 
+// Mobile header button for show/hide completed
+document.getElementById('toggleShowDoneMobile').addEventListener('click', function () {
+    showCompleted = !showCompleted;
+    renderTasks();
+    
+    // Update button appearance
+    this.textContent = showCompleted ? '👁️‍🗨️' : '👁️';
+    this.title = showCompleted ? 'Hide Completed' : 'Show Completed';
+});
+
 // Reset all tasks
 document.getElementById('resetAll').addEventListener('click', async function () {
-    if (confirm('Möchtest du wirklich alle Aufgaben zurücksetzen?')) {
+    if (confirm('Do you really want to reset all tasks?')) {
+        // Save scroll position before reset (for mobile)
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        
+        isUpdatingFromSocket = true;
+        try {
+            const response = await fetch('/api/tasks/reset', {
+                method: 'POST'
+            });
+            if (response.ok) {
+                tasks.forEach(t => t.completed = false);
+                renderTasks();
+            } else {
+                console.error('Failed to reset tasks');
+            }
+        } catch (error) {
+            console.error('Error resetting tasks:', error);
+            // Fallback to local reset
+            tasks.forEach(t => t.completed = false);
+            await saveTasks();
+            renderTasks();
+        }
+        
+        // Restore scroll position on mobile
+        if (window.innerWidth <= 767 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            setTimeout(() => {
+                window.scrollTo(0, scrollPosition);
+            }, 0);
+        }
+        
+        isUpdatingFromSocket = false;
+    }
+});
+
+// Mobile header button for reset all
+document.getElementById('resetAllMobile').addEventListener('click', async function () {
+    if (confirm('Do you really want to reset all tasks?')) {
         // Save scroll position before reset (for mobile)
         const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
         
@@ -523,6 +607,76 @@ document.querySelectorAll('#taskTable thead th.sortable').forEach(th => {
         }
         renderTasks();
     });
+});
+
+// Toggle add form on mobile
+document.getElementById('toggleAddForm').addEventListener('click', function() {
+    const addFormCollapse = document.getElementById('addFormCollapse');
+    const isVisible = addFormCollapse.classList.contains('show');
+    
+    if (isVisible) {
+        addFormCollapse.classList.remove('show');
+        this.innerHTML = '<span class="fs-4">+</span>';
+    } else {
+        addFormCollapse.classList.add('show');
+        this.innerHTML = '<span class="fs-4">×</span>';
+    }
+});
+
+// Toggle search form on mobile
+document.getElementById('toggleSearchMobile').addEventListener('click', function() {
+    const searchFormCollapse = document.getElementById('searchFormCollapse');
+    const isVisible = searchFormCollapse.classList.contains('show');
+    
+    if (isVisible) {
+        searchFormCollapse.classList.remove('show');
+        this.textContent = '🔍';
+    } else {
+        searchFormCollapse.classList.add('show');
+        this.textContent = '×';
+        // Focus the search input when opened
+        document.getElementById('searchFilterMobile').focus();
+    }
+});
+
+// Search filter functionality
+function setupSearchFilter() {
+    const desktopSearch = document.getElementById('searchFilter');
+    const mobileSearch = document.getElementById('searchFilterMobile');
+    
+    function handleSearch(event) {
+        searchFilter = event.target.value;
+        renderTasks();
+        
+        // Sync between desktop and mobile search
+        if (event.target === desktopSearch) {
+            mobileSearch.value = searchFilter;
+        } else {
+            desktopSearch.value = searchFilter;
+        }
+    }
+    
+    desktopSearch.addEventListener('input', handleSearch);
+    mobileSearch.addEventListener('input', handleSearch);
+}
+
+// Initialize search filter
+setupSearchFilter();
+
+// Auto-close mobile forms when task is added successfully
+const originalFormSubmit = document.getElementById('taskForm').onsubmit;
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    // Check if we're on mobile and form is collapsed
+    if (window.innerWidth <= 767) {
+        setTimeout(() => {
+            const addFormCollapse = document.getElementById('addFormCollapse');
+            const toggleButton = document.getElementById('toggleAddForm');
+            if (addFormCollapse.classList.contains('show')) {
+                addFormCollapse.classList.remove('show');
+                toggleButton.innerHTML = '<span class="fs-4">+</span>';
+            }
+        }, 100); // Small delay to ensure form submission is processed
+    }
 });
 
 // Initial load - Socket.IO will send initial tasks

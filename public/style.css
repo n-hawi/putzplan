@@ -4,8 +4,63 @@ body {
     padding: 0 15px;
 }
 
+/* Progress bar styling */
+.progress {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+/* Add margin to content below sticky header */
+.content-below-header {
+    margin-top: 200px;
+}
+
+@media screen and (min-width: 768px) {
+    .content-below-header {
+        margin-top: 280px;
+    }
+}
+
+/* Sticky header */
+.sticky-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    z-index: 1000;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sticky-header .container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Smooth transitions for collapsible elements */
+.collapse {
+    transition: height 0.35s ease;
+}
+
+.collapse:not(.show) {
+    display: none;
+}
+
+.collapse.show {
+    display: block;
+}
+
 /* Mobile-first responsive design */
 @media screen and (max-width: 767px) {
+    .content-below-header {
+        margin-top: 200px;
+    }
+    
     .container {
         padding: 10px !important;
         max-width: 100% !important;
@@ -13,17 +68,21 @@ body {
     
     h1 {
         font-size: 1.8rem;
-        text-align: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    /* Hide original action buttons on mobile - they're now in header */
+    .d-flex.flex-column.flex-sm-row {
+        display: none !important;
     }
     
     /* Larger form elements on mobile */
     .form-control, .btn {
         min-height: 50px;
-        font-size: 18px; /* Prevents zoom on iOS and makes it more readable */
+        font-size: 18px; /* Prevents zoom on iOS */
     }
     
-    /* Force mobile layout - hide desktop table structure */
+    /* Mobile table layout - hide desktop table structure */
     .table-responsive {
         border: none !important;
         overflow: visible !important;
@@ -35,7 +94,7 @@ body {
     }
     
     #taskTable thead {
-        display: none !important; /* Hide table headers on mobile */
+        display: none !important;
     }
     
     #taskTable tbody {
@@ -85,7 +144,7 @@ body {
         margin-bottom: 10px !important;
     }
     
-    /* Mobile buttons */
+    /* Mobile task actions */
     .task-actions {
         display: flex !important;
         gap: 8px !important;
@@ -99,12 +158,12 @@ body {
         border-radius: 6px !important;
     }
     
-    /* First button (Erledigt) takes full width */
+    /* Complete button takes full width */
     .task-actions > .btn:first-child {
         flex: 1 !important;
     }
     
-    /* Button group for Edit/Delete takes equal space */
+    /* Edit/Delete button group */
     .task-actions .btn-group {
         display: flex !important;
         gap: 4px !important;
@@ -169,7 +228,7 @@ body {
     }
 }
 
-/* Success state with subtle pulse */
+/* Completed task styling */
 .task-row.completed {
     background-color: #d4edda !important;
 }

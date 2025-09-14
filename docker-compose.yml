@@ -1,0 +1,27 @@
+services:
+  putzplan:
+    build: .
+    container_name: putzplan-app
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist tasks data
+      - ./tasks.json:/usr/src/app/tasks.json
+      # Optional: persist logs
+      # - ./logs:/usr/src/app/logs
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    networks:
+      - putzplan-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  putzplan-network:
+    driver: bridge
