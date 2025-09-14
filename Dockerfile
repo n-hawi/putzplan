@@ -23,8 +23,8 @@ RUN mkdir -p /usr/src/app/data
 EXPOSE 3000
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S putzplan -u 1017
+RUN addgroup -g 36953 -S nodejs
+RUN adduser -S putzplan -u 36953
 
 # Change ownership of app directory
 RUN chown -R putzplan:nodejs /usr/src/app

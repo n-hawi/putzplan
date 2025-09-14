@@ -10,8 +10,25 @@ let currentSort = { field: 'room', asc: true };
 let searchFilter = '';
 
 // Initialize Socket.IO for live updates
-const socket = io();
+const socket = io(window.location.origin, {
+    transports: ['websocket', 'polling'],
+    timeout: 20000,
+    forceNew: true
+});
 let isUpdatingFromSocket = false;
+
+// Socket.IO connection debugging
+socket.on('connect', () => {
+    console.log('Socket.IO connected successfully');
+});
+
+socket.on('disconnect', (reason) => {
+    console.log('Socket.IO disconnected:', reason);
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Socket.IO connection error:', error);
+});
 
 // Update progress bar based on completed tasks
 function updateProgressBar() {

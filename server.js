@@ -7,14 +7,27 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    },
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
+});
 
 const PORT = 3000;
-const DATA_FILE = path.join(__dirname, 'tasks.json');
+const DATA_FILE = path.join(__dirname, 'data', 'tasks.json');
 const EXAMPLE_FILE = path.join(__dirname, 'tasks.example.json');
 
 // Load tasks from file
 function loadTasks() {
+    // Ensure data directory exists
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
     if (!fs.existsSync(DATA_FILE)) {
         // If tasks.json doesn't exist, try to copy from example file
         if (fs.existsSync(EXAMPLE_FILE)) {

@@ -5,10 +5,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Persist tasks data
-      - ./tasks.json:/usr/src/app/tasks.json
-      # Optional: persist logs
-      # - ./logs:/usr/src/app/logs
+      # Use Docker volume for data persistence (better for security)
+      - putzplan_data:/usr/src/app/data
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -21,6 +19,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+# Named volumes for data persistence
+volumes:
+  putzplan_data:
+    driver: local
 
 networks:
   putzplan-network:
